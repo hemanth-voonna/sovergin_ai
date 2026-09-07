@@ -1,0 +1,58 @@
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: sovereign
+      POSTGRES_PASSWORD: sovereign
+      POSTGRES_DB: sovereignai
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U sovereign -d sovereignai"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  backend:
+    build: ./backend
+    restart: unless-stopped
+    environment:
+      ENV: production
+      DATABASE_URL: postgresql+psycopg2://sovereign:sovereign@db:5432/sovereignai
+      DATA_DIR: /app/data
+      UPLOAD_DIR: /app/data/uploads
+      VECTOR_DB_PATH: /app/data/chroma
+      SAMPLE_DIR: /app/samples
+      FRONTEND_ORIGIN: http://localhost:8080
+      # --- LLM: leave as 'auto' for the fully-offline sovereign demo. Cloud
+      # AI APIs are never called; only LOCAL OpenAI-compatible endpoints
+      # (Ollama/vLLM/LM Studio) are honoured via OPENAI_BASE_URL.
+      LLM_PROVIDER: ${LLM_PROVIDER:-auto}
+      LLM_MODEL: ${LLM_MODEL:-llama3.1:8b}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_BASE_URL: ${OPENAI_BASE_URL:-}
+      ALLOW_REMOTE_LLM: ${ALLOW_REMOTE_LLM:-false}
+      EMBEDDINGS_PROVIDER: ${EMBEDDINGS_PROVIDER:-auto}
+      ANONYMIZED_TELEMETRY: "false"
+      ACCESS_TOKEN: ${ACCESS_TOKEN:-}
+      SANDBOX_EXECUTOR: subprocess
+    volumes:
+      - sovereign_data:/app/data
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+  frontend:
+    build: ./frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "8080:80"
+
+volumes:
+  pgdata:
+  sovereign_data:
