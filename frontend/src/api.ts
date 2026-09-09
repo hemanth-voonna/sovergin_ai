@@ -1,9 +1,11 @@
 import type {
   AgentInfo,
   AgentRun,
+  AuthUser,
   Dashboard,
   DocumentDetail,
   DocumentItem,
+  LoginResponse,
   OCRResult,
   RAGAnswer,
   SandboxResult,
@@ -12,6 +14,7 @@ import type {
 } from "./types";
 
 const TOKEN_KEY = "sovereignai_token";
+const USER_KEY = "sovereignai_user";
 const API_BASE_URL = import.meta.env.VITE_API_URL ?? "";
 
 export function getToken(): string {
@@ -22,6 +25,27 @@ export function setToken(token: string): void {
   if (token) localStorage.setItem(TOKEN_KEY, token);
   else localStorage.removeItem(TOKEN_KEY);
 }
+
+export function getUser(): AuthUser | null {
+  const raw = localStorage.getItem(USER_KEY);
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as AuthUser;
+  } catch {
+    return null;
+  }
+}
+
+export function setUser(user: AuthUser | null): void {
+  if (user) localStorage.setItem(USER_KEY, JSON.stringify(user));
+  else localStorage.removeItem(USER_KEY);
+}
+
+export function clearAuth(): void {
+  setToken("");
+  setUser(null);
+}
+
 
 export class ApiError extends Error {
   status: number;
@@ -63,6 +87,10 @@ async function request<T>(
       detail = body.detail ?? detail;
     } catch {
       /* keep statusText */
+    }
+
+    if (res.status === 401 && path !== "/api/auth/login") {
+      clearAuth();
     }
 
     throw new ApiError(
@@ -282,5 +310,34 @@ export const api = {
   settings: () =>
     request<SettingsInfo>(
       "/api/settings"
+    ),
+
+  // ---- auth ----------------------------------------------------------------
+
+  login: async (username: string, password: string) => {
+    const data = await request<LoginResponse>("/api/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ username, password }),
+    });
+    setToken(data.access_token);
+    setUser({ username: data.username, full_name: data.full_name });
+    return data;
+  },
+
+  logout: async () => {
+    try {
+      await request<void>("/api/auth/logout", {
+        method: "POST",
+      });
+    } catch {
+      /* ignore server error on logout */
+    } finally {
+      clearAuth();
+    }
+  },
+
+  getMe: () =>
+    request<AuthUser>(
+      "/api/auth/me"
     ),
 };

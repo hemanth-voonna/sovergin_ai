@@ -15,7 +15,7 @@ import {
   Upload,
 } from "lucide-react";
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
-import { api, ApiError } from "../api";
+import { api, ApiError, getUser } from "../api";
 import type { Activity, Dashboard } from "../types";
 import { Alert, EmptyState, Spinner, StatCard, formatDuration, timeAgo, useToast } from "../components/ui";
 
@@ -49,6 +49,8 @@ function ActivityRow({ item }: { item: Activity }) {
 }
 
 export default function Dashboard() {
+  const user = getUser();
+  const username = user?.username || "User";
   const [data, setData] = useState<Dashboard | null>(null);
   const [error, setError] = useState("");
   const [loadingSample, setLoadingSample] = useState(false);
@@ -93,6 +95,10 @@ export default function Dashboard() {
       {/* Hero */}
       <div className="card flex flex-col justify-between gap-4 bg-gradient-to-r from-ink-900 to-ink-800 p-6 text-white md:flex-row md:items-center">
         <div>
+          <div className="mb-2 inline-flex items-center gap-1.5 rounded-full bg-brand-500/20 px-3 py-1 text-xs font-semibold text-brand-300 border border-brand-500/30">
+            <span>Welcome,</span>
+            <span className="text-white font-bold">{username}</span>
+          </div>
           <h2 className="text-xl font-bold">SovereignAI Workbench</h2>
           <p className="mt-1 max-w-xl text-sm text-slate-300">
             Secure, on-premise document processing — upload, OCR, ground AI answers in your

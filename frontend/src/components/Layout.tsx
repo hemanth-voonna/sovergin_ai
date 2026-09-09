@@ -1,22 +1,24 @@
 import { useEffect, useState } from "react";
-import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
   Bot,
   FileText,
   Gauge,
   Landmark,
   LayoutDashboard,
+  LogOut,
   MessageSquareText,
   ScanText,
   Settings as SettingsIcon,
   ShieldCheck,
   Terminal,
+  User as UserIcon,
 } from "lucide-react";
-import { api } from "../api";
+import { api, getUser } from "../api";
 import { ToastProvider } from "./ui";
 
 const NAV = [
-  { to: "/", label: "Dashboard", icon: LayoutDashboard },
+  { to: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { to: "/documents", label: "Documents", icon: FileText },
   { to: "/chat", label: "RAG Chat", icon: MessageSquareText },
   { to: "/agents", label: "AI Agents", icon: Bot },
@@ -28,6 +30,7 @@ const NAV = [
 
 const TITLES: Record<string, string> = {
   "/": "Dashboard",
+  "/dashboard": "Dashboard",
   "/documents": "Document Management",
   "/chat": "RAG Chat",
   "/agents": "AI Agents",
@@ -76,7 +79,14 @@ function HealthPill() {
 
 export default function Layout() {
   const location = useLocation();
+  const navigate = useNavigate();
+  const currentUser = getUser();
   const title = TITLES[location.pathname] ?? "SovereignAI Workbench";
+
+  const handleLogout = async () => {
+    await api.logout();
+    navigate("/login", { replace: true });
+  };
 
   return (
     <ToastProvider>
@@ -97,7 +107,7 @@ export default function Layout() {
               <NavLink
                 key={to}
                 to={to}
-                end={to === "/"}
+                end={to === "/dashboard" || to === "/"}
                 className={({ isActive }) =>
                   `flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors ${
                     isActive
@@ -111,6 +121,31 @@ export default function Layout() {
               </NavLink>
             ))}
           </nav>
+
+          {/* User profile & Logout */}
+          <div className="border-t border-white/10 px-4 py-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-slate-800 text-brand-400">
+                  <UserIcon className="h-4 w-4" />
+                </div>
+                <div className="min-w-0">
+                  <p className="truncate text-xs font-semibold text-white">
+                    {currentUser?.username || "Admin"}
+                  </p>
+                  <p className="truncate text-[10px] text-slate-400">Authenticated</p>
+                </div>
+              </div>
+              <button
+                onClick={handleLogout}
+                title="Sign out"
+                className="flex items-center justify-center rounded-lg p-1.5 text-slate-400 hover:bg-white/10 hover:text-rose-400 transition-colors"
+              >
+                <LogOut className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+
           <div className="border-t border-white/10 px-5 py-4">
             <p className="text-[11px] leading-relaxed text-slate-500">
               Sovereign, private &amp; on-premise document intelligence for government and enterprise.
@@ -125,7 +160,23 @@ export default function Layout() {
               <Gauge className="h-5 w-5 text-brand-600" />
               <h1 className="text-lg font-semibold text-slate-800">{title}</h1>
             </div>
-            <HealthPill />
+            <div className="flex items-center gap-4">
+              <HealthPill />
+              <div className="h-4 w-px bg-slate-200" />
+              <div className="flex items-center gap-2.5">
+                <span className="text-xs font-medium text-slate-600 hidden sm:inline">
+                  {currentUser?.username || "Admin"}
+                </span>
+                <button
+                  onClick={handleLogout}
+                  title="Sign out"
+                  className="flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-colors"
+                >
+                  <LogOut className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Logout</span>
+                </button>
+              </div>
+            </div>
           </header>
           <main className="flex-1 px-6 py-6">
             <Outlet />

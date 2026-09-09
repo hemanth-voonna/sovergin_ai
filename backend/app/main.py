@@ -13,6 +13,7 @@ from .config import settings
 from .database import init_db
 from .routers import (
     agents,
+    auth,
     dashboard,
     documents,
     health,
@@ -92,11 +93,13 @@ app = FastAPI(
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        settings.FRONTEND_ORIGIN,
-        "http://localhost:5173",
-        "http://127.0.0.1:5173",
-        "https://sovergin-ai.vercel.app",
-    ],
+    settings.FRONTEND_ORIGIN,
+    "http://localhost:5173",
+    "http://127.0.0.1:5173",
+    "http://localhost:5174",
+    "http://127.0.0.1:5174",
+    "https://sovergin-ai.vercel.app",
+],
     allow_credentials=False,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -151,6 +154,7 @@ async def request_logging(request: Request, call_next):
 # Routers
 # ---------------------------------------------------------------------------
 app.include_router(health.router)
+app.include_router(auth.router)
 app.include_router(dashboard.router)
 app.include_router(documents.router)
 app.include_router(rag.router)

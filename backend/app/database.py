@@ -42,9 +42,34 @@ def init_db(retries: int = 10, delay: float = 2.0) -> None:
     for attempt in range(1, retries + 1):
         try:
             Base.metadata.create_all(bind=engine)
+            _seed_default_user()
             return
         except Exception as exc:  # pragma: no cover - depends on infra
             last_error = exc
             logger.warning("DB init attempt %d failed: %s", attempt, exc)
             time.sleep(delay)
     raise RuntimeError(f"Could not initialise database: {last_error}")
+
+
+def _seed_default_user() -> None:
+    """Ensure at least one administrative user exists."""
+    from app.models import User
+    from app.security import hash_password
+
+    db = SessionLocal()
+    try:
+        if db.query(User).count() == 0:
+            default_user = User(
+                username="admin",
+                hashed_password=hash_password("admin123"),
+                full_name="Administrator",
+                is_active=True,
+            )
+            db.add(default_user)
+            db.commit()
+            logger.info("Seeded default admin user (username: admin)")
+    except Exception as e:
+        logger.warning("Failed to seed default user: %s", e)
+        db.rollback()
+    finally:
+        db.close()

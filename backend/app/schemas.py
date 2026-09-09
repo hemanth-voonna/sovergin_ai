@@ -187,3 +187,23 @@ class SettingsOut(BaseModel):
     chunk_size: int
     chunk_overlap: int
     top_k: int
+
+
+# ------------------------------------------------------------------ Auth
+class LoginRequestIn(BaseModel):
+    username: str = Field(..., min_length=1, max_length=64)
+    password: str = Field(..., min_length=1, max_length=128)
+
+
+class TokenOut(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    username: str
+    full_name: str = ""
+
+
+class UserOut(BaseModel):
+    id: str
+    username: str
+    full_name: str = ""
+    is_active: bool = True

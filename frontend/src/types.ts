@@ -160,3 +160,17 @@ export interface SettingsInfo {
   chunk_overlap: number;
   top_k: number;
 }
+
+export interface AuthUser {
+  id?: string;
+  username: string;
+  full_name?: string;
+  is_active?: boolean;
+}
+
+export interface LoginResponse {
+  access_token: string;
+  token_type: string;
+  username: string;
+  full_name: string;
+}
